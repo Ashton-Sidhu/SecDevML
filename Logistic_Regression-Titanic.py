@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Logistic Regression - Titanic Example
@@ -12,7 +12,7 @@
 # 
 # Two datasets are available: a training set and a test set. We'll be using the training set to build our predictive model and the testing set to evaluate it.
 
-# In[142]:
+# In[42]:
 
 
 # import useful modules 
@@ -31,22 +31,24 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import GridSearchCV
-from sklearn.grid_search import GridSearchCV
 from sklearn.model_selection import learning_curve
-from sklearn.learning_curve import learning_curve
 from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import KFold
+
+import warnings
+warnings.warn = warn
+
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 
-# In[101]:
+# In[2]:
 
 
 sns.set_style('whitegrid')
 
 
-# In[102]:
+# In[3]:
 
 
 def draw_missing_data_table(df):
@@ -60,7 +62,7 @@ def draw_missing_data_table(df):
 
 # ## Data Gathering
 
-# In[103]:
+# In[4]:
 
 
 training_data = pd.read_csv("train.csv")
@@ -69,7 +71,7 @@ test_data  = pd.read_csv("test.csv")
 training_data.head()
 
 
-# In[104]:
+# In[5]:
 
 
 test_data.head()
@@ -77,7 +79,7 @@ test_data.head()
 
 # ## Data Cleaning
 
-# In[105]:
+# In[6]:
 
 
 print(training_data.info())
@@ -102,28 +104,28 @@ print(test_data.info())
 # 
 # Let us check which records in the training data are missing information for the Embarked field. 
 
-# In[106]:
+# In[7]:
 
 
 draw_missing_data_table(training_data)
 
 
-# In[107]:
+# In[8]:
 
 
 draw_missing_data_table(test_data)
 
 
-# In[108]:
+# In[9]:
 
 
 # check the missing data for the Embarked field
-training_data[training_data.Embarked.isnull()]
+training_data[training_data['Embarked'].isnull()]
 
 
 # Let's look at the survival chances depending on the port of embarkation
 
-# In[109]:
+# In[10]:
 
 
 # plot
@@ -141,26 +143,26 @@ sns.barplot(x='Embarked', y='Survived', data=embark_perc,order=['S','C','Q'],ax=
 
 # Lets look at other variables that may indicate where passengers embarked the ship.
 
-# In[110]:
+# In[11]:
 
 
 training_data.loc[training_data.Ticket == '113572']
 
 
-# In[111]:
+# In[12]:
 
 
 print( 'C == ' + str( len(training_data.loc[training_data.Pclass == 1].loc[training_data.Fare > 75].loc[training_data.Fare < 85].loc[training_data.Embarked == 'C']) ) )
 print( 'S == ' + str( len(training_data.loc[training_data.Pclass == 1].loc[training_data.Fare > 75].loc[training_data.Fare < 85].loc[training_data.Embarked == 'S']) ) )
 
 
-# In[112]:
+# In[13]:
 
 
 training_data = training_data.set_value(training_data.Embarked.isnull(), 'Embarked', 'C')
 
 
-# In[113]:
+# In[14]:
 
 
 training_data.loc[training_data.Embarked.isnull()]
@@ -168,7 +170,7 @@ training_data.loc[training_data.Embarked.isnull()]
 
 # Let us check which records are missing information for the Fare and Cabin fields
 
-# In[114]:
+# In[15]:
 
 
 test_data[test_data.Fare.isnull()]
@@ -176,7 +178,7 @@ test_data[test_data.Fare.isnull()]
 
 # Let's visualize a histogram of the fares paid by the 3rd class passengers who embarked in Southampton.
 
-# In[115]:
+# In[16]:
 
 
 fig = plt.figure(figsize=(8, 5))
@@ -188,7 +190,7 @@ plt.ylabel('Frequency')
 plt.title('Histogram of Fare, Plcass 3 and Embarked S')
 
 
-# In[116]:
+# In[17]:
 
 
 print ("The top 5 most common fares")
@@ -197,7 +199,7 @@ test_data[(test_data.Pclass==3)&(test_data.Embarked=='S')].Fare.value_counts().h
 
 # Let us fill in the missing values with the most common fare, $8.05
 
-# In[117]:
+# In[18]:
 
 
 test_data.set_value(test_data.Fare.isnull(), 'Fare', 8.05)
@@ -206,13 +208,13 @@ test_data.loc[test_data.Fare.isnull()]
 
 # Let's look at the field of <b>Age</b> in the training dataset, and see how it correlates with survival.
 
-# In[118]:
+# In[19]:
 
 
 test_data.loc[test_data.Age.isnull()].head()
 
 
-# In[119]:
+# In[20]:
 
 
 fig, (axis1,axis2) = plt.subplots(1,2,figsize=(15,4))
@@ -243,13 +245,8 @@ training_data['Age'].hist(bins=70, ax=axis2)
 test_data['Age'].hist(bins=70, ax=axis2)
 
 
-# In[120]:
+# In[21]:
 
-
-facet = sns.FacetGrid(training_data, hue="Survived",aspect=4)
-facet.map(sns.kdeplot,'Age',shade= True)
-facet.set(xlim=(0, training_data['Age'].max()))
-facet.add_legend()
 
 fig, axis1 = plt.subplots(1,1,figsize=(18,4))
 
@@ -258,13 +255,13 @@ average_age = training_data[["Age", "Survived"]].groupby(['Age'],as_index=False)
 sns.barplot(x='Age', y='Survived', data=average_age)
 
 
-# In[121]:
+# In[22]:
 
 
 draw_missing_data_table(training_data)
 
 
-# In[122]:
+# In[23]:
 
 
 draw_missing_data_table(test_data)
@@ -274,26 +271,26 @@ draw_missing_data_table(test_data)
 # 
 # Since it doesn't tell us anything meaningful and there is no other feature we can use it in conjunction with, we can remove it.
 
-# In[123]:
+# In[24]:
 
 
 training_data.drop(['Cabin'], axis=1, inplace=True)
 test_data.drop(['Cabin'], axis=1, inplace=True)
 
 
-# In[79]:
+# In[25]:
 
 
+training_data
 
 
-
-# In[124]:
+# In[26]:
 
 
 draw_missing_data_table(training_data)
 
 
-# In[125]:
+# In[27]:
 
 
 draw_missing_data_table(test_data)
@@ -309,7 +306,7 @@ draw_missing_data_table(test_data)
 # 
 # Extracting the passenger titles and storring them in an additional column called <b>Title</b>.
 
-# In[126]:
+# In[28]:
 
 
 Title_Dictionary = {
@@ -341,7 +338,7 @@ training_data.head(10)
 
 # Add a field FamilySize that aggregates the information in the fields indicating the presence of a partner (Parch) or a relative (SibSp).
 
-# In[127]:
+# In[29]:
 
 
 training_data['FamilySize'] = training_data['SibSp'] + training_data['Parch']
@@ -352,7 +349,7 @@ training_data.head()
 
 # The gender of pasanger is an important factor in surviving the accident. So is a pasenger's age.  Let us introduce a new feature to take into account the gender and age of passengers.
 
-# In[128]:
+# In[30]:
 
 
 def get_person(passenger):
@@ -365,7 +362,7 @@ test_data['Person']    = test_data[['Age','Sex']].apply(get_person,axis=1)
 training_data.head()
 
 
-# In[129]:
+# In[31]:
 
 
 training_data.info()
@@ -375,14 +372,14 @@ test_data.info()
 
 # Let us select just the features of interest. We are dropping features like Name, SibSp and Sex, whose information is either no longer needed or is accounted for in the columns that we have added.
 
-# In[130]:
+# In[32]:
 
 
 training_data.drop(labels=['PassengerId', 'Name', 'Ticket', 'SibSp', 'Parch', 'Sex'], axis=1, inplace=True)
 test_data.drop(labels=['Name', 'Ticket', 'SibSp', 'Parch', 'Sex'], axis=1, inplace=True)
 
 
-# In[131]:
+# In[33]:
 
 
 training_data.head()
@@ -393,7 +390,7 @@ training_data.head()
 # 
 # First, let us use Pandas' get_dummies function to encode some of the features with discrete values, i.e., Person, Embarked, Title and Pclass and add those dummy variables as columns to the DataFrame object that stores the training data.
 
-# In[132]:
+# In[34]:
 
 
 dummies_person_train = pd.get_dummies(training_data['Person'],prefix='Person')
@@ -407,7 +404,7 @@ training_data = training_data.drop(['Person','Embarked','Title', 'Pclass'], axis
 training_data.head()
 
 
-# In[133]:
+# In[35]:
 
 
 dummies_person_test   = pd.get_dummies(test_data['Person'],prefix='Person')
@@ -427,7 +424,7 @@ test_data.head()
 # 
 # plot_learning_curve() uses in turn the function sklearn.learning_curve.learning_curve(), which determines cross-validated training and test scores for different training set sizes. An (optional) cross-validation generator splits the given dataset k times in training and test data. (The default is 3-fold cross validation.) Subsets of the training set with varying sizes will be used to train the estimator and a score for each training subset size and the test set will be computed. The scores are averaged over all k runs for each training subset size.
 
-# In[134]:
+# In[36]:
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None, n_jobs=1,                        train_sizes=np.linspace(.1, 1.0, 5), scoring='accuracy'):
@@ -461,28 +458,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None, n_jobs=1,   
 
 # Let us build a model for the Titanic data. First, let us split the training data set into training and validation datasets, with the validation dataset being 30% of the data.  We are using sklearn.model_selection.train_test_split() which splits arrays or matrices into random train and validation, "test", subsets.
 
-# In[103]:
-
-
-# import machine learning modules
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer, accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-try:
-    from sklearn.model_selection import train_test_split
-except:
-    from sklearn.cross_validation import train_test_split
-try:
-    from sklearn.model_selection import GridSearchCV
-except:
-    from sklearn.grid_search import GridSearchCV
-try:
-    from sklearn.model_selection import learning_curve
-except:
-    from sklearn.learning_curve import learning_curve
-
-
-# In[135]:
+# In[37]:
 
 
 X = training_data.drop(['Survived'], axis=1)
@@ -499,61 +475,21 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_
 # 
 # 
 
-# In[105]:
-
-
-# Choose the type of classifier. 
-clf = RandomForestClassifier()
-
-# Choose some parameter combinations to try
-parameters = {'n_estimators': [4, 6, 9], 
-              'max_features': ['log2', 'sqrt','auto'], 
-              'criterion': ['entropy', 'gini'],
-              'max_depth': [2, 3, 5, 10], 
-              'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1,5,8]
-             }
-
-# make_scorer returns a callable object that scores an estimator’s output.
-#We are using accuracy_score for comparing different parameter combinations. 
-acc_scorer = make_scorer(accuracy_score)
-
-# Run the grid search for the Random Forest classifier
-grid_obj = GridSearchCV(clf, parameters, scoring=acc_scorer)
-grid_obj = grid_obj.fit(X_train, y_train)
-
-# Set our classifier, clf, to the have the best combination of parameters
-clf = grid_obj.best_estimator_
-
-# Fit the selected classifier to the training data
-clf.fit(X_train, y_train)
-
-
 # For cross validation we are using the sklearn.model_selection.KFold(), a K-folds cross-validator which provides training and validation/testing indices to split data into training and validation (or testing) sets. KFold() splits a dataset into k consecutive folds with each fold used once as a validation while the k - 1 remaining folds form the training set.
 
-# In[106]:
+# In[51]:
 
-
-predictions = clf.predict(X_test)
-print(accuracy_score(y_test, predictions))
-plot_learning_curve(clf, 'Random Forest', X, y, cv=4);
-
-
-# In[136]:
-
-
-from sklearn.cross_validation import KFold
 
 def run_kfold(clf):
     
     #run KFold with 10 folds instead of the default 3
     #on the 891 records in the training_data
-    kf = KFold(891, n_folds=10)
+    kf = KFold(n_splits=10)
     
     outcomes = []
     fold = 0
     
-    for train_index, test_index in kf:
+    for train_index, test_index in kf.split(X):
         fold += 1
         X_train, X_test = X.values[train_index], X.values[test_index]
         y_train, y_test = y.values[train_index], y.values[test_index]
@@ -569,14 +505,14 @@ def run_kfold(clf):
     print("Mean Accuracy: {0}".format(mean_outcome)) 
 
 
-# Let's repeat the above procedure for the logistic regression. Find the "best" Logistic Regression classifier: 
+# Let's Find the "best" Logistic Regression classifier: 
 
-# In[137]:
+# In[65]:
 
 
-lg = LogisticRegression(random_state=42)
+lg = LogisticRegression(random_state=42, solver='lbfgs', max_iter=10000)
 parameters = {'C': [0.1, 0.5, 1], 
-              'penalty': ['l1', 'l2'], 
+              'penalty': ['l2'],
              }
 
 run_kfold(lg)
@@ -596,7 +532,7 @@ lg.fit(X_train, y_train)
 
 # Plot the mean accuracy, the "learning curve", of the classifier on both the training and validation datasets.
 
-# In[138]:
+# In[60]:
 
 
 predictions_lg = lg.predict(X_test)
@@ -606,7 +542,7 @@ plot_learning_curve(lg, 'Logistic Regression', X, y, cv=4);
 
 # Let's test our model on the unseen data (test set file) and make the confusion matrix!
 
-# In[146]:
+# In[54]:
 
 
 real_results = pd.Series(y_test, name='Actual')
@@ -615,7 +551,7 @@ confusion_matrix_df = pd.crosstab(real_results, predicted_results)
 confusion_matrix_df
 
 
-# In[152]:
+# In[55]:
 
 
 def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
@@ -635,7 +571,7 @@ plot_confusion_matrix(confusion_matrix_df)
 
 # Finally, perform predictions on the reserved test dataset using the selected Random Forest classifier and store them in a file, titanic-predictions.csv.
 
-# In[153]:
+# In[56]:
 
 
 ids = test_data['PassengerId']
@@ -643,4 +579,22 @@ predictions = lg.predict(test_data.drop('PassengerId', axis=1))
 
 output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': predictions })
 output.head()
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
