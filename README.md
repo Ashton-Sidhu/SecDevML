@@ -1,5 +1,7 @@
 # SecDevML
 
+Demo for the Intro to ML presentation for the SecDev team.
+
 ## To download packages
 
 ### On Windows
