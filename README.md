@@ -1,4 +1,4 @@
-# SecDevML
+# ML tutorial
 
 Demo for the Intro to ML presentation for the SecDev team.
 
