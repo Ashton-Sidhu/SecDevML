@@ -16,6 +16,6 @@ Jupyter requires sudo privileges to be downloaded.
 
 ## To start
 
-Open up a terminal and navigate to the `SecDevML` directory.
+Open up a terminal and navigate to the `mltutorial` directory.
 
 Type `jupyter notebook` and select `Logistic_Regress-Titanic.ipynb`
